@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma de Evaluación - Neuro y Endo</title>
+    <style>
+        :root {
+            --bg-body: #f8fafc; --bg-card: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
+            --border-color: #e2e8f0; --primary: #2563eb; --primary-hover: #1d4ed8;
+            --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+        }
+
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 30px 20px; display: flex; justify-content: center; min-height: 100vh; line-height: 1.5; }
+        .container { background-color: var(--bg-card); width: 100%; max-width: 750px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 40px; box-sizing: border-box; align-self: flex-start; display: flex; flex-direction: column; min-height: calc(100vh - 60px); }
+        .oculto { display: none !important; }
+        
+        h1, h2, h3 { color: var(--text-main); margin-top: 0; font-weight: 600; }
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px; }
+
+        .btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 6px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-outline { background-color: transparent; border-color: var(--border-color); color: var(--text-main); }
+        .btn-outline:hover { background-color: var(--bg-body); border-color: #cbd5e1; }
+        .btn-success { background-color: var(--success); color: white; }
+        
+        .menu-grid { display: flex; flex-direction: column; gap: 12px; flex-grow: 1; }
+        .menu-btn { padding: 16px; font-size: 1rem; border: 1px solid var(--border-color); background: white; color: var(--text-main); border-radius: 8px; font-weight: 500; cursor: pointer; transition: 0.2s;}
+        .menu-btn:hover:not(:disabled) { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+        
+        .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;}
+        .badge { background-color: #f1f5f9; color: var(--text-muted); padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; }
+        .badge-warning { background-color: #fef3c7; color: #d97706; }
+        .badge-theme { background-color: #e0e7ff; color: #3b82f6; }
+        .question-text { font-size: 1.15rem; font-weight: 500; margin-bottom: 24px; color: #1e293b; }
+        
+        .options-grid { display: flex; flex-direction: column; gap: 10px; }
+        .option-btn { background-color: white; border: 1px solid var(--border-color); padding: 16px; border-radius: 6px; text-align: left; cursor: pointer; font-size: 1rem; color: var(--text-main); transition: 0.2s;}
+        .option-btn:hover:not(:disabled) { border-color: var(--primary); background-color: #eff6ff; }
+        .option-btn.selected { border-color: var(--primary); background-color: #eff6ff; box-shadow: 0 0 0 1px var(--primary); font-weight: 500; }
+        .option-btn.correcta { background-color: #ecfdf5; border-color: var(--success); color: #065f46; font-weight: 500;}
+        .option-btn.incorrecta { background-color: #fef2f2; border-color: var(--danger); color: #991b1b; }
+        .option-btn:disabled { cursor: default; }
+
+        .explicacion { margin-top: 20px; padding: 16px; background-color: #f8fafc; border-left: 4px solid var(--primary); border-radius: 0 6px 6px 0; display: none; font-size: 0.95rem; color: #334155;}
+        .img-test { max-width: 100%; border-radius: 6px; margin-bottom: 20px; max-height: 350px; object-fit: contain; display: block; border: 1px solid var(--border-color);}
+        
+        /* NAVEGACIÓN MOODLE */
+        .moodle-container { margin-bottom: 20px; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: #f8fafc; max-height: 120px; overflow-y: auto; }
+        .moodle-grid-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+        .moodle-box { width: 32px; height: 40px; border: 1px solid #94a3b8; border-radius: 4px; display: flex; flex-direction: column; cursor: pointer; overflow: hidden; background: white; transition: 0.1s; }
+        .moodle-box:hover { border-color: var(--primary); }
+        .moodle-box.actual { outline: 2px solid var(--primary); outline-offset: 1px; }
+        .moodle-box-top { height: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.75rem; font-weight: bold; color: var(--text-main); border-bottom: 1px solid #e2e8f0;}
+        .moodle-box-bottom { height: 50%; background: white; }
+        .moodle-box.respondida .moodle-box-bottom { background: #cbd5e1; }
+        .moodle-box.acertada .moodle-box-bottom { background: var(--success); }
+        .moodle-box.fallada .moodle-box-bottom { background: var(--danger); }
+
+        /* EDITOR Y LISTAS */
+        .upload-box { border: 1px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 6px; margin-bottom: 24px; background: #f8fafc; }
+        .form-control { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; font-family: inherit; }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+        .form-control:disabled { background-color: #f1f5f9; cursor: not-allowed; }
+        
+        .lista-preguntas { max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 20px; flex-grow: 1;}
+        .item-pregunta { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 15px;}
+        .item-pregunta:last-child { border-bottom: none; }
+        .item-info { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+        .item-titulo { font-weight: 500; font-size: 0.95rem; color: #334155; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
+        .item-acciones { display: flex; gap: 8px; flex-shrink: 0; }
+        
+        /* MODALES */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 32px; border-radius: 8px; width: 95%; max-width: 900px; max-height: 90vh; overflow-y: auto; }
+        .modal-content-small { max-width: 500px; }
+        .modal-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+        @media(min-width: 768px) { .modal-grid { grid-template-columns: 1fr 1fr; } }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; color: #475569;}
+        .opcion-edit-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .radio-correcta { width: 18px; height: 18px; cursor: pointer; accent-color: var(--success); flex-shrink: 0;}
+        .paste-zone { border: 2px dashed #cbd5e1; background: #f8fafc; padding: 20px; border-radius: 6px; text-align: center; color: var(--text-muted); transition: all 0.2s; position: relative;}
+        .paste-zone:focus-within { border-color: var(--primary); }
+        .paste-zone img { max-width: 100%; max-height: 150px; margin-top: 10px; border-radius: 4px; display: none; }
+
+        /* CONFIGURADOR DE TEST */
+        .config-card { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .config-card h3 { margin-top: 0; font-size: 1.1rem; margin-bottom: 15px; color: var(--primary); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;}
+        .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+        .theme-checkbox { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;}
+        .theme-checkbox input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer;}
+        .radio-group { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .radio-label { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; cursor: pointer; }
+        .radio-label input[type="radio"] { accent-color: var(--primary); width: 16px; height: 16px;}
+        
+        .switch-container { display: flex; align-items: center; justify-content: center; gap: 15px; font-size: 0.95rem; margin-top: 10px; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .switch input:checked + .slider { background-color: var(--primary); }
+        .switch input:checked + .slider:before { transform: translateX(22px); }
+        .switch-label { cursor: pointer; user-select: none; color: var(--text-muted); transition: 0.2s; }
+        .switch-label.active { font-weight: 600; color: var(--text-main); }
+
+        /* PANTALLA RESUMEN Y ACORDEÓN */
+        .resumen-header { text-align: center; margin-bottom: 30px; }
+        .grafico-donut-container { display: flex; justify-content: center; margin-bottom: 30px; }
+        .donut-chart { width: 180px; height: 180px; border-radius: 50%; background: conic-gradient(var(--success) 0% 0%, var(--danger) 0% 100%); display: flex; align-items: center; justify-content: center; transition: background 1s ease-out; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+        .donut-inner { width: 130px; height: 130px; background: var(--bg-card); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .donut-score { font-size: 2rem; font-weight: 800; color: var(--text-main); line-height: 1; }
+        .donut-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 1px;}
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .stat-card { padding: 20px; border-radius: 8px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: 0.2s; background: #f8fafc;}
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-card.success { border-color: #a7f3d0; color: #065f46; }
+        .stat-card.success:hover { background: #ecfdf5; }
+        .stat-card.danger { border-color: #fecaca; color: #991b1b; }
+        .stat-card.danger:hover { background: #fef2f2; }
+        .stat-num { font-size: 2rem; font-weight: bold; line-height: 1; margin-bottom: 5px;}
+        .stat-text { font-size: 0.9rem; font-weight: 600; text-transform: uppercase;}
+
+        .lista-detalle { max-height: 450px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; background: white; margin-bottom: 20px; }
+        .detalle-item { padding: 15px; border-bottom: 1px solid #f1f5f9; border-left: 4px solid transparent; transition: background 0.2s; }
+        .detalle-item:hover { background: #f8fafc; }
+        .detalle-item:last-child { border-bottom: none; }
+        .detalle-pregunta { font-weight: 500; font-size: 0.95rem; line-height: 1.4; color: var(--text-main); }
+        
+        .resumen-opt { padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.9rem; background: white; }
+        .resumen-opt.correcta { background-color: #ecfdf5; border-color: var(--success); color: #065f46; font-weight: 500; }
+        .resumen-opt.incorrecta { background-color: #fef2f2; border-color: var(--danger); color: #991b1b; font-weight: 500;}
+        
+        /* MARCA DE AGUA (WATERMARK) */
+        .watermark { text-align: center; font-size: 0.8rem; color: #94a3b8; padding-top: 20px; margin-top: auto; border-top: 1px solid var(--border-color); }
+    </style>
+</head>
+<body>
+
+    <div id="pantalla-menu" class="container">
+        <h1>Banco de Evaluación Médica</h1>
+        <div class="subtitle">Sistema Nervioso y Endocrino</div>
+        
+        <div style="text-align: center; margin-bottom: 30px; color: var(--text-muted); font-size: 0.95rem;">
+            Total de preguntas disponibles: <strong id="contador-total" style="color: var(--text-main);">Cargando...</strong>
+        </div>
+
+        <div class="menu-grid">
+            <button class="menu-btn" onclick="abrirConfigurador()" id="btn-iniciar-test" disabled style="opacity: 0.5; cursor: not-allowed;">▶️ Comenzar Evaluación</button>
+            <button class="menu-btn" onclick="abrirEditor()">⚙️ Gestión del Banco de Preguntas</button>
+        </div>
+        
+        <div class="watermark">Desarrollado por: Miquel Navarro Gómez</div>
+    </div>
+
+    <div id="pantalla-configuracion" class="container oculto">
+        <h2 style="text-align: center; margin-bottom: 30px;">⚙️ Configurar Sesión de Estudio</h2>
+        
+        <div class="config-card">
+            <h3>🏷️ 1. Filtrar por Temas</h3>
+            <div style="margin-bottom: 15px;">
+                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="marcarTodosTemas(true)">Seleccionar Todos</button>
+                <button class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="marcarTodosTemas(false)">Desmarcar Todos</button>
+            </div>
+            <div id="config-temas-grid" class="theme-grid"></div>
+        </div>
+
+        <div class="config-card">
+            <h3>🔢 2. Cantidad de Preguntas</h3>
+            <div class="radio-group">
+                <label class="radio-label"><input type="radio" name="conf-cantidad" value="10"> 10</label>
+                <label class="radio-label"><input type="radio" name="conf-cantidad" value="25" checked> 25</label>
+                <label class="radio-label"><input type="radio" name="conf-cantidad" value="50"> 50</label>
+                <label class="radio-label"><input type="radio" name="conf-cantidad" value="todas"> Todas</label>
+                <label class="radio-label" style="display: flex; align-items: center; gap: 8px; margin-left: 10px;">
+                    <input type="radio" name="conf-cantidad" value="custom"> Personalizado:
+                    <input type="number" id="input-custom-num" class="form-control" style="width: 80px; padding: 4px 8px; height: 32px;" min="1" disabled>
+                </label>
+            </div>
+        </div>
+
+        <div class="config-card">
+            <h3>🔀 3. Modo de Presentación</h3>
+            <div class="switch-container">
+                <span class="switch-label" id="label-secuencial" onclick="toggleSwitch('chk-orden-aleatorio', false, 'label-secuencial', 'label-aleatorio')">Orden Secuencial</span>
+                <label class="switch">
+                    <input type="checkbox" id="chk-orden-aleatorio" checked onchange="actualizarLabelsSwitch('chk-orden-aleatorio', 'label-secuencial', 'label-aleatorio')">
+                    <span class="slider"></span>
+                </label>
+                <span class="switch-label active" id="label-aleatorio" onclick="toggleSwitch('chk-orden-aleatorio', true, 'label-secuencial', 'label-aleatorio')">Orden Aleatorio</span>
+            </div>
+        </div>
+
+        <div class="config-card">
+            <h3>⚡ 4. Corrección al Instante</h3>
+            <div class="switch-container">
+                <span class="switch-label" id="label-corr-off" onclick="toggleSwitch('chk-correccion', false, 'label-corr-off', 'label-corr-on')">Modo Examen (Oculta)</span>
+                <label class="switch">
+                    <input type="checkbox" id="chk-correccion" checked onchange="actualizarLabelsSwitch('chk-correccion', 'label-corr-off', 'label-corr-on')">
+                    <span class="slider"></span>
+                </label>
+                <span class="switch-label active" id="label-corr-on" onclick="toggleSwitch('chk-correccion', true, 'label-corr-off', 'label-corr-on')">Modo Estudio (Inmediata)</span>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 30px;">
+            <button class="btn btn-outline" style="flex: 1;" onclick="volverMenu()">Volver</button>
+            <button class="btn btn-primary" style="flex: 2; font-size: 1.1rem;" onclick="generarTest()">¡Empezar Test! 🚀</button>
+        </div>
+        <div class="watermark">Desarrollado por: Miquel Navarro Gómez</div>
+    </div>
+
+    <div id="pantalla-test" class="container oculto">
+        <div class="question-header">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span class="badge" id="badge-info"></span>
+                <span id="badge-tema-test" class="badge badge-theme oculto"></span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.85rem;" onclick="editarDesdeTest()" title="Editar pregunta actual">✏️ Editar</button>
+                <button class="btn btn-outline" style="padding: 6px 10px; font-size: 0.85rem; color: var(--danger); border-color: #fca5a5;" onclick="borrarDesdeTest()" title="Eliminar del banco general">🗑️ Descartar</button>
+            </div>
+        </div>
+        
+        <div class="moodle-container">
+            <div id="moodle-grid" class="moodle-grid-nav"></div>
+        </div>
+
+        <div class="question-text" id="texto-pregunta"></div>
+        <div id="contenedor-imagen"></div>
+        <div class="options-grid" id="contenedor-opciones"></div>
+        <div id="caja-explicacion" class="explicacion"></div>
+        
+        <div style="display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap;">
+            <button class="btn btn-outline" style="flex: 1; min-width: 120px;" onclick="mostrarResumenFinal()">Finalizar Test</button>
+            <button id="btn-anterior" class="btn btn-outline" style="flex: 1; min-width: 120px;" onclick="preguntaAnterior()">Anterior</button>
+            <button id="btn-mostrar-respuesta" class="btn btn-outline" style="flex: 1; display: none; min-width: 120px;" onclick="mostrarRespuestaManual()">👁️ Corregir</button>
+            <button id="btn-siguiente" class="btn btn-primary" style="flex: 1; min-width: 120px;" onclick="siguientePregunta()">Siguiente</button>
+        </div>
+        <div class="watermark">Desarrollado por: Miquel Navarro Gómez</div>
+    </div>
+
+    <div id="pantalla-resumen" class="container oculto">
+        <div class="resumen-header">
+            <h2 style="margin-bottom: 5px;">📊 Resumen de la Sesión</h2>
+            <div class="subtitle" style="margin-bottom: 20px;">Haga clic en las tarjetas para visualizar la corrección detallada</div>
+        </div>
+
+        <div class="grafico-donut-container">
+            <div id="grafico-donut" class="donut-chart">
+                <div class="donut-inner">
+                    <span id="donut-score" class="donut-score">0%</span>
+                    <span class="donut-label">Aciertos</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card success" onclick="renderizarDetalleResumen('aciertos')">
+                <div id="stat-num-aciertos" class="stat-num">0</div>
+                <div class="stat-text">✅ Acertadas</div>
+            </div>
+            <div class="stat-card danger" onclick="renderizarDetalleResumen('fallos')">
+                <div id="stat-num-fallos" class="stat-num">0</div>
+                <div class="stat-text">❌ Falladas</div>
+            </div>
+        </div>
+
+        <div id="contenedor-lista-resumen" class="oculto" style="flex-grow: 1;">
+            <h3 id="titulo-lista-resumen" style="font-size: 1rem; margin-bottom: 10px;">Detalle de Preguntas</h3>
+            <div id="lista-detalle-resumen" class="lista-detalle"></div>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="volverMenu()">Volver al Menú Principal 🏠</button>
+        <div class="watermark">Desarrollado por: Miquel Navarro Gómez</div>
+    </div>
+
+    <div id="pantalla-gestion" class="container oculto">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="margin: 0;">Gestión de Preguntas</h2>
+            <button class="btn btn-outline" onclick="volverMenu()" style="padding: 6px 12px; font-size: 0.85rem;">Volver</button>
+        </div>
+        
+        <div class="upload-box">
+            <label style="display: block; font-weight: 500; margin-bottom: 10px;">Importar archivo Súper JSON</label>
+            <input type="file" id="json-upload" accept=".json" class="form-control" style="background: white; padding: 5px;" onchange="cargarJSON(event)">
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
+                <button onclick="exportarSúperJSON()" class="btn btn-success" style="font-size: 0.85rem;">💾 Exportar Súper JSON</button>
+                <button onclick="borrarTodoBanco()" class="btn btn-outline" style="color: var(--danger); border-color: #fca5a5; font-size: 0.85rem;">🗑️ Vaciar Base de Datos</button>
+            </div>
+            <small id="error-json" style="color:var(--danger); display:block; margin-top:10px; font-weight:bold;"></small>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+            <input type="text" id="buscador" class="form-control" style="flex: 1;" placeholder="Buscar enunciado, tema, ID..." onkeyup="renderizarLista()">
+            <button class="btn btn-primary" onclick="abrirModalNuevaPregunta()" style="flex-shrink: 0; font-size: 0.9rem;">+ Nueva Pregunta</button>
+        </div>
+        
+        <div id="lista-preguntas" class="lista-preguntas"></div>
+        <div class="watermark">Desarrollado por: Miquel Navarro Gómez</div>
+    </div>
+
+    <div id="modal-editar" class="modal-overlay oculto">
+        <div class="modal-content">
+            <h3 id="modal-titulo" style="margin-top: 0; margin-bottom: 24px;">Editar Pregunta</h3>
+            <div class="modal-grid">
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label>Tema / Categoría</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="edit-tema-select" class="form-control" style="flex: 1;"></select>
+                            <button class="btn btn-outline" style="padding: 0 12px; flex-shrink: 0;" onclick="abrirGestorTemas()">⚙️</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label>Enunciado</label>
+                        <textarea id="edit-pregunta" class="form-control" rows="5"></textarea>
+                    </div>
+                    <div class="form-group" style="margin: 0; display: flex; flex-direction: column; flex-grow: 1;">
+                        <label>Justificación / Explicación (Opcional)</label>
+                        <textarea id="edit-explicacion" class="form-control" style="flex-grow: 1; min-height: 100px;"></textarea>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label>Material de Apoyo (Imagen)</label>
+                        <div class="paste-zone" id="paste-zone" tabindex="0">
+                            <div id="paste-instructions"><span style="font-size: 1.2rem; display: block; margin-bottom: 5px;">📋</span> Haz clic aquí y pulse <strong>Ctrl+V</strong> para pegar una captura.</div>
+                            <img id="edit-img-preview" src="">
+                            <button id="btn-eliminar-img" class="btn btn-outline" style="display: none; width: 100%; margin-top: 10px; font-size: 0.85rem; color: var(--danger);" onclick="eliminarImagenActual()">Eliminar Imagen</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label>Opciones y Respuesta Correcta</label>
+                        <div id="contenedor-edit-opciones"></div>
+                        <button class="btn btn-outline" style="margin-top: 10px; width: 100%; font-size: 0.85rem; border-style: dashed;" onclick="agregarOpcionVacia()">+ Añadir opción</button>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 30px;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="cerrarModalEdicion()">Cancelar</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="guardarEdicion()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-gestor-temas" class="modal-overlay oculto" style="z-index: 1050;">
+        <div class="modal-content modal-content-small">
+            <h3 style="margin-top: 0; margin-bottom: 20px;">⚙️ Gestor de Temas</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="nuevo-tema-input" class="form-control" placeholder="Nombre del nuevo tema...">
+                <button class="btn btn-primary" onclick="agregarNuevoTema()">Añadir</button>
+            </div>
+            <div id="lista-temas-gestion" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; background: #fafafa;"></div>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 20px;" onclick="cerrarGestorTemas()">Cerrar y Volver</button>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE DATOS E INICIALIZACIÓN ---
+        let db;
+        let bancoPreguntas = [];
+        let listaTemas = []; 
+        
+        // --- VARIABLES DE SESIÓN DE TEST ---
+        let preguntasTestActual = []; 
+        let estadoRespuestas = []; // Almacena el progreso de cada pregunta: { seleccionada: index, evaluada: bool, correcta: bool }
+        let preguntaActual = 0;
+        let correccionInmediata = true;
+        
+        let indiceEdicion = -1; 
+        let opcionesTemporales = []; 
+        let imagenBase64Temporal = null; 
+
+        function initDB() {
+            const request = indexedDB.open("NeuroEndoDB", 1);
+            request.onupgradeneeded = function(event) {
+                db = event.target.result;
+                if (!db.objectStoreNames.contains("bancoStore")) db.createObjectStore("bancoStore");
+            };
+            request.onsuccess = function(event) {
+                db = event.target.result;
+                cargarDatosDesdeDB();
+            };
+            request.onerror = function(event) { alert("Error de acceso a la base de datos local."); };
+        }
+
+        function cargarDatosDesdeDB() {
+            const transaction = db.transaction(["bancoStore"], "readonly");
+            const store = transaction.objectStore("bancoStore");
+            let pCargadas = false, tCargados = false;
+            
+            store.get("preguntas").onsuccess = function(e) { bancoPreguntas = e.target.result || []; pCargadas = true; check(); };
+            store.get("temas").onsuccess = function(e) { listaTemas = e.target.result || []; tCargados = true; check(); };
+            
+            function check() { if(pCargadas && tCargados) { sincronizarTemas(); actualizarMenu(); } }
+        }
+
+        function guardarBancoEnDB() {
+            const transaction = db.transaction(["bancoStore"], "readwrite");
+            transaction.objectStore("bancoStore").put(bancoPreguntas, "preguntas");
+            transaction.oncomplete = function() { actualizarMenu(); };
+        }
+
+        function guardarTemasEnDB() {
+            const transaction = db.transaction(["bancoStore"], "readwrite");
+            transaction.objectStore("bancoStore").put(listaTemas, "temas");
+        }
+
+        function sincronizarTemas() {
+            let hayCambios = false;
+            bancoPreguntas.forEach(p => {
+                if(p.tema && !listaTemas.includes(p.tema)) { listaTemas.push(p.tema); hayCambios = true; }
+            });
+            listaTemas.sort(); 
+            if(hayCambios) guardarTemasEnDB();
+        }
+
+        window.onload = initDB;
+
+        // --- NAVEGACIÓN ---
+        function actualizarMenu() {
+            document.getElementById('contador-total').innerText = bancoPreguntas.length;
+            const btnIniciar = document.getElementById('btn-iniciar-test');
+            if(bancoPreguntas.length === 0) {
+                btnIniciar.disabled = true;
+                btnIniciar.style.opacity = "0.5";
+                btnIniciar.style.cursor = "not-allowed";
+            } else {
+                btnIniciar.disabled = false;
+                btnIniciar.style.opacity = "1";
+                btnIniciar.style.cursor = "pointer";
+            }
+        }
+
+        function volverMenu() {
+            document.querySelectorAll('.container').forEach(c => c.classList.add('oculto'));
+            document.getElementById('pantalla-menu').classList.remove('oculto');
+        }
+
+        function abrirEditor() {
+            document.getElementById('pantalla-menu').classList.add('oculto');
+            document.getElementById('pantalla-gestion').classList.remove('oculto');
+            renderizarLista();
+        }
+
+        // --- MOTOR DEL CONFIGURADOR DE TEST ---
+        function abrirConfigurador() {
+            document.getElementById('pantalla-menu').classList.add('oculto');
+            document.getElementById('pantalla-configuracion').classList.remove('oculto');
+            
+            const grid = document.getElementById('config-temas-grid');
+            grid.innerHTML = '';
+            
+            const countSinTema = bancoPreguntas.filter(p => !p.tema || p.tema.trim() === "").length;
+            grid.innerHTML += `<label class="theme-checkbox"><input type="checkbox" value="SIN_TEMA" checked class="chk-tema"> <em>Sin clasificar (${countSinTema})</em></label>`;
+            
+            listaTemas.forEach(t => {
+                const countTema = bancoPreguntas.filter(p => p.tema === t).length;
+                grid.innerHTML += `<label class="theme-checkbox"><input type="checkbox" value="${t}" checked class="chk-tema"> ${t} (${countTema})</label>`;
+            });
+        }
+
+        function marcarTodosTemas(estado) {
+            document.querySelectorAll('.chk-tema').forEach(chk => chk.checked = estado);
+        }
+
+        document.querySelectorAll('input[name="conf-cantidad"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const inputCustom = document.getElementById('input-custom-num');
+                if (this.value === 'custom') {
+                    inputCustom.disabled = false;
+                    inputCustom.focus();
+                } else {
+                    inputCustom.disabled = true;
+                }
+            });
+        });
+
+        function actualizarLabelsSwitch(chkId, labelOffId, labelOnId) {
+            const chk = document.getElementById(chkId);
+            if (chk.checked) {
+                document.getElementById(labelOnId).classList.add('active');
+                document.getElementById(labelOffId).classList.remove('active');
+            } else {
+                document.getElementById(labelOffId).classList.add('active');
+                document.getElementById(labelOnId).classList.remove('active');
+            }
+        }
+        
+        function toggleSwitch(chkId, isChecked, labelOffId, labelOnId) {
+            document.getElementById(chkId).checked = isChecked;
+            actualizarLabelsSwitch(chkId, labelOffId, labelOnId);
+        }
+
+        function generarTest() {
+            const temasSeleccionados = Array.from(document.querySelectorAll('.chk-tema:checked')).map(chk => chk.value);
+            if(temasSeleccionados.length === 0) return alert("Por favor, seleccione al menos un área temática para proceder.");
+
+            let filtradas = bancoPreguntas.filter(p => {
+                const temaP = p.tema ? p.tema : "SIN_TEMA";
+                return temasSeleccionados.includes(temaP);
+            });
+
+            if(filtradas.length === 0) return alert("No existen preguntas asociadas a las categorías seleccionadas.");
+
+            const esAleatorio = document.getElementById('chk-orden-aleatorio').checked;
+            if (esAleatorio) {
+                for (let i = filtradas.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [filtradas[i], filtradas[j]] = [filtradas[j], filtradas[i]];
+                }
+            }
+
+            const confCantidad = document.querySelector('input[name="conf-cantidad"]:checked').value;
+            let limit = filtradas.length;
+            if (confCantidad === "custom") {
+                const val = parseInt(document.getElementById('input-custom-num').value);
+                if(isNaN(val) || val <= 0) return alert("Introduzca un valor numérico válido.");
+                limit = val;
+            } else if (confCantidad !== "todas") {
+                limit = parseInt(confCantidad);
+            }
+            
+            filtradas = filtradas.slice(0, limit);
+            correccionInmediata = document.getElementById('chk-correccion').checked;
+            
+            // Inicializar el estado de la sesión
+            preguntasTestActual = filtradas;
+            preguntaActual = 0;
+            estadoRespuestas = new Array(preguntasTestActual.length).fill(null).map(() => ({ 
+                seleccionada: -1, 
+                evaluada: false, 
+                correcta: null 
+            }));
+            
+            document.getElementById('contenedor-lista-resumen').classList.add('oculto');
+            document.getElementById('pantalla-configuracion').classList.add('oculto');
+            document.getElementById('pantalla-test').classList.remove('oculto');
+            
+            cargarPreguntaTest();
+        }
+
+        // --- RENDERIZACIÓN DE MOODLE GRID ---
+        function renderizarGridMoodle() {
+            const grid = document.getElementById('moodle-grid');
+            grid.innerHTML = '';
+            
+            estadoRespuestas.forEach((estado, index) => {
+                let claseEstado = '';
+                if (estado.evaluada) {
+                    claseEstado = estado.correcta ? 'acertada' : 'fallada';
+                } else if (estado.seleccionada !== -1) {
+                    claseEstado = 'respondida';
+                }
+                
+                const esActual = (index === preguntaActual) ? 'actual' : '';
+                
+                grid.innerHTML += `
+                    <div class="moodle-box ${claseEstado} ${esActual}" onclick="irAPregunta(${index})">
+                        <div class="moodle-box-top">${index + 1}</div>
+                        <div class="moodle-box-bottom"></div>
+                    </div>
+                `;
+            });
+        }
+
+        function irAPregunta(index) {
+            if(index < 0 || index >= preguntasTestActual.length) return;
+            preguntaActual = index;
+            cargarPreguntaTest();
+        }
+
+        // --- LÓGICA DEL TEST Y NAVEGACIÓN ---
+        function cargarPreguntaTest() {
+            renderizarGridMoodle();
+            
+            const p = preguntasTestActual[preguntaActual];
+            const estadoActual = estadoRespuestas[preguntaActual];
+            
+            document.getElementById('badge-info').innerText = `ID: ${p.id || 'N/A'}`;
+            const badgeTemaTest = document.getElementById('badge-tema-test');
+            if (p.tema) { badgeTemaTest.innerText = `🏷️ ${p.tema}`; badgeTemaTest.classList.remove('oculto'); } 
+            else { badgeTemaTest.classList.add('oculto'); }
+
+            document.getElementById('texto-pregunta').innerText = p.pregunta;
+            
+            const contImagen = document.getElementById('contenedor-imagen'); contImagen.innerHTML = '';
+            if (p.imagenBase64) contImagen.innerHTML = `<img src="${p.imagenBase64}" class="img-test">`;
+            else if (p.requiereImagen) contImagen.innerHTML = `<div style="background:#fef2f2; border:1px solid #fca5a5; color:#991b1b; padding:15px; border-radius:6px; margin-bottom:20px; text-align:center;">Material gráfico ausente. Por favor, edite la pregunta.</div>`;
+
+            // Reset visual controls
+            document.getElementById('caja-explicacion').style.display = 'none';
+            document.getElementById('btn-mostrar-respuesta').style.display = 'none';
+            
+            // Navegación
+            document.getElementById('btn-anterior').disabled = (preguntaActual === 0);
+            const btnSiguiente = document.getElementById('btn-siguiente');
+            if (preguntaActual === preguntasTestActual.length - 1) {
+                btnSiguiente.innerText = "Ver Resultados";
+            } else {
+                btnSiguiente.innerText = "Siguiente";
+            }
+            btnSiguiente.style.display = 'block';
+
+            // Opciones
+            const contenedorOpciones = document.getElementById('contenedor-opciones'); 
+            contenedorOpciones.innerHTML = ''; 
+            
+            p.opciones.forEach((opcion, index) => {
+                const boton = document.createElement('button');
+                boton.className = 'option-btn'; 
+                boton.innerText = opcion;
+                
+                // Restablecer el estado visual si previamente se seleccionó/evaluó
+                if (estadoActual.evaluada) {
+                    boton.disabled = true;
+                    if (index === p.respuestaCorrecta) {
+                        boton.classList.add('correcta');
+                    } else if (index === estadoActual.seleccionada) {
+                        boton.classList.add('incorrecta');
+                    }
+                } else {
+                    boton.onclick = () => seleccionarOpcion(index, boton);
+                    if (estadoActual.seleccionada === index) {
+                        boton.classList.add('selected');
+                        if (!correccionInmediata) document.getElementById('btn-mostrar-respuesta').style.display = 'block';
+                    }
+                }
+                contenedorOpciones.appendChild(boton);
+            });
+
+            // Mostrar justificación si ya está evaluada
+            if (estadoActual.evaluada && p.explicacion) {
+                const expl = document.getElementById('caja-explicacion');
+                expl.innerHTML = `<strong>Justificación:</strong><br>${p.explicacion}`;
+                expl.style.display = 'block';
+            }
+        }
+
+        function seleccionarOpcion(indexSeleccionado, botonPulsado) {
+            const estadoActual = estadoRespuestas[preguntaActual];
+            if (estadoActual.evaluada) return;
+
+            estadoActual.seleccionada = indexSeleccionado;
+
+            if (correccionInmediata) {
+                evaluarYMostrar(indexSeleccionado);
+            } else {
+                const botones = document.querySelectorAll('.option-btn');
+                botones.forEach(btn => btn.classList.remove('selected'));
+                botonPulsado.classList.add('selected');
+                document.getElementById('btn-mostrar-respuesta').style.display = 'block';
+                renderizarGridMoodle();
+            }
+        }
+
+        function evaluarYMostrar(indexSeleccionado) {
+            const estadoActual = estadoRespuestas[preguntaActual];
+            if (estadoActual.evaluada) return;
+            
+            const p = preguntasTestActual[preguntaActual];
+            estadoActual.evaluada = true;
+            estadoActual.correcta = (indexSeleccionado === p.respuestaCorrecta);
+
+            // Reflejar cambios visuales en el instante
+            const botones = document.querySelectorAll('.option-btn');
+            botones.forEach((btn, i) => {
+                btn.disabled = true;
+                btn.classList.remove('selected');
+                if (i === p.respuestaCorrecta) {
+                    btn.classList.add('correcta');
+                } else if (i === indexSeleccionado) {
+                    btn.classList.add('incorrecta');
+                }
+            });
+
+            document.getElementById('btn-mostrar-respuesta').style.display = 'none';
+
+            if(p.explicacion) {
+                const expl = document.getElementById('caja-explicacion');
+                expl.innerHTML = `<strong>Justificación:</strong><br>${p.explicacion}`;
+                expl.style.display = 'block';
+            }
+            renderizarGridMoodle();
+        }
+
+        function mostrarRespuestaManual() {
+            const estadoActual = estadoRespuestas[preguntaActual];
+            if (estadoActual.seleccionada !== -1) {
+                evaluarYMostrar(estadoActual.seleccionada);
+            }
+        }
+
+        function siguientePregunta() { 
+            if (preguntaActual >= preguntasTestActual.length - 1) {
+                mostrarResumenFinal();
+            } else {
+                irAPregunta(preguntaActual + 1);
+            }
+        }
+        
+        function preguntaAnterior() {
+            irAPregunta(preguntaActual - 1);
+        }
+
+        // --- PANTALLA RESUMEN Y ESTADÍSTICAS ---
+        function mostrarResumenFinal() {
+            // Forzar evaluación silenciosa de las preguntas respondidas en Modo Examen que no se hayan corregido manualmente
+            estadoRespuestas.forEach((estado, index) => {
+                if (!estado.evaluada && estado.seleccionada !== -1) {
+                    estado.evaluada = true;
+                    estado.correcta = (estado.seleccionada === preguntasTestActual[index].respuestaCorrecta);
+                }
+            });
+
+            document.getElementById('pantalla-test').classList.add('oculto');
+            
+            const preguntasAcertadas = estadoRespuestas.filter(e => e.evaluada && e.correcta).length;
+            const preguntasFalladas = estadoRespuestas.filter(e => e.evaluada && e.correcta === false).length;
+            const totalRespondidas = preguntasAcertadas + preguntasFalladas;
+            
+            let porcentaje = 0;
+            if(totalRespondidas > 0) {
+                porcentaje = Math.round((preguntasAcertadas / totalRespondidas) * 100);
+            }
+
+            const donut = document.getElementById('grafico-donut');
+            donut.style.background = `conic-gradient(var(--success) 0% ${porcentaje}%, var(--danger) ${porcentaje}% 100%)`;
+            
+            document.getElementById('donut-score').innerText = `${porcentaje}%`;
+            document.getElementById('stat-num-aciertos').innerText = preguntasAcertadas;
+            document.getElementById('stat-num-fallos').innerText = preguntasFalladas;
+
+            document.getElementById('contenedor-lista-resumen').classList.add('oculto');
+            document.getElementById('pantalla-resumen').classList.remove('oculto');
+        }
+
+        function toggleDetalleAcordeon(index, tipo) {
+            const cuerpo = document.getElementById(`cuerpo-${tipo}-${index}`);
+            const flecha = document.getElementById(`flecha-${tipo}-${index}`);
+            if (cuerpo.classList.contains('oculto')) {
+                cuerpo.classList.remove('oculto');
+                flecha.innerText = '▲';
+            } else {
+                cuerpo.classList.add('oculto');
+                flecha.innerText = '▼';
+            }
+        }
+
+        function renderizarDetalleResumen(tipo) {
+            const contenedor = document.getElementById('contenedor-lista-resumen');
+            const lista = document.getElementById('lista-detalle-resumen');
+            const titulo = document.getElementById('titulo-lista-resumen');
+            
+            lista.innerHTML = '';
+            contenedor.classList.remove('oculto');
+
+            // Filtrar las preguntas evaluadas según sean aciertos o fallos
+            let arrayObjetos = [];
+            estadoRespuestas.forEach((estado, index) => {
+                if (estado.evaluada) {
+                    if (tipo === 'aciertos' && estado.correcta) {
+                        arrayObjetos.push({ p: preguntasTestActual[index], seleccion: estado.seleccionada });
+                    } else if (tipo === 'fallos' && estado.correcta === false) {
+                        arrayObjetos.push({ p: preguntasTestActual[index], seleccion: estado.seleccionada });
+                    }
+                }
+            });
+
+            if(tipo === 'aciertos') {
+                titulo.innerHTML = `✅ Detalle de preguntas acertadas (${arrayObjetos.length})`;
+            } else {
+                titulo.innerHTML = `❌ Detalle de preguntas falladas (${arrayObjetos.length})`;
+            }
+
+            if(arrayObjetos.length === 0) {
+                lista.innerHTML = `<div class="detalle-item" style="text-align:center; color:var(--text-muted); cursor:default;">No existen registros en esta categoría.</div>`;
+                return;
+            }
+
+            arrayObjetos.forEach((item, index) => {
+                const p = item.p;
+                const seleccion = item.seleccion;
+                const colorBorde = tipo === 'aciertos' ? 'var(--success)' : 'var(--danger)';
+                const icon = tipo === 'aciertos' ? '✅' : '❌';
+
+                let imgHTML = '';
+                if (p.imagenBase64) {
+                    imgHTML = `<img src="${p.imagenBase64}" style="max-height: 150px; border-radius: 4px; margin-bottom: 15px; border: 1px solid var(--border-color); max-width: 100%; object-fit: contain; display: block;">`;
+                }
+
+                let opcionesHTML = `<div style="display: flex; flex-direction: column; gap: 8px;">`;
+                p.opciones.forEach((opcion, i) => {
+                    let claseOpcion = 'resumen-opt';
+                    let iconoOp = '';
+                    if (i === p.respuestaCorrecta) {
+                        claseOpcion += ' correcta';
+                        iconoOp = '✅ ';
+                    } else if (i === seleccion) {
+                        claseOpcion += ' incorrecta';
+                        iconoOp = '❌ ';
+                    }
+                    opcionesHTML += `<div class="${claseOpcion}">${iconoOp}${opcion}</div>`;
+                });
+                opcionesHTML += `</div>`;
+
+                let explicacionHTML = '';
+                if(p.explicacion) {
+                    explicacionHTML = `<div style="margin-top:15px; padding:12px; background:#f8fafc; border-radius:6px; font-size:0.9rem; color:#334155; border-left:3px solid var(--primary);"><strong>Justificación:</strong><br>${p.explicacion}</div>`;
+                }
+
+                lista.innerHTML += `
+                    <div class="detalle-item" style="border-left-color: ${colorBorde}; cursor: pointer;" onclick="toggleDetalleAcordeon(${index}, '${tipo}')">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 10px;">
+                            <div class="detalle-pregunta">${icon} ${p.id ? '#'+p.id : ''} ${p.pregunta}</div>
+                            <div id="flecha-${tipo}-${index}" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">▼</div>
+                        </div>
+                        <div id="cuerpo-${tipo}-${index}" class="oculto" style="margin-top: 20px; cursor: default;" onclick="event.stopPropagation()">
+                            ${imgHTML}
+                            ${opcionesHTML}
+                            ${explicacionHTML}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- GESTIÓN, EDICIÓN Y JSON (Mantenido intacto de la versión anterior) ---
+        function cargarJSON(event) {
+            const archivo = event.target.files[0];
+            if (!archivo) return;
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                try {
+                    let textoJson = e.target.result.replace(/[\u200B-\u200D\uFEFF]/g, ''); 
+                    const nuevas = JSON.parse(textoJson);
+                    if(!Array.isArray(nuevas)) throw new Error("Formato inválido.");
+                    bancoPreguntas = bancoPreguntas.concat(nuevas);
+                    sincronizarTemas(); 
+                    guardarBancoEnDB();
+                    renderizarLista();
+                    alert("Importación completada con éxito.");
+                    event.target.value = ""; 
+                } catch (error) { document.getElementById('error-json').innerText = "Error en la lectura del archivo JSON."; }
+            };
+            lector.readAsText(archivo, 'UTF-8');
+        }
+
+        function exportarSúperJSON() {
+            if(bancoPreguntas.length === 0) return alert("Base de datos vacía. No es posible exportar.");
+            const dataStr = JSON.stringify(bancoPreguntas, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "banco_super_json_comprimido.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function borrarTodoBanco() {
+            if(confirm("Atención: ¿Confirma que desea eliminar toda la base de datos local de forma permanente?")) {
+                bancoPreguntas = []; listaTemas = []; guardarBancoEnDB(); guardarTemasEnDB(); renderizarLista();
+            }
+        }
+
+        function renderizarLista() {
+            const contenedor = document.getElementById('lista-preguntas');
+            const busqueda = document.getElementById('buscador').value.toLowerCase();
+            contenedor.innerHTML = '';
+            bancoPreguntas.forEach((p, index) => {
+                const textoBusqueda = (p.pregunta + " " + (p.tema || '')).toLowerCase();
+                if (busqueda && !textoBusqueda.includes(busqueda)) return;
+                let badgeImg = p.imagenBase64 ? `<span class="badge" style="background:#e2e8f0;">🖼️ OK</span>` : (p.requiereImagen ? `<span class="badge badge-warning">⚠️ Falta Img</span>` : '');
+                let badgeTema = p.tema ? `<span class="badge badge-theme">🏷️ ${p.tema}</span>` : '';
+                const div = document.createElement('div');
+                div.className = 'item-pregunta';
+                div.innerHTML = `
+                    <div class="item-info"><div class="item-titulo">${p.id ? '#'+p.id : ''} ${p.pregunta}</div>
+                    <div style="display:flex; gap:8px;"><span class="badge">${p.año || 'S/A'}</span>${badgeTema}${badgeImg}</div></div>
+                    <div class="item-acciones">
+                        <button class="btn btn-outline" style="padding: 6px; font-size: 0.8rem;" onclick="abrirModalEdicion(${index})">Editar</button>
+                        <button class="btn btn-outline" style="padding: 6px; font-size: 0.8rem; color: var(--danger); border-color: #fca5a5;" onclick="borrarPregunta(${index})">Borrar</button>
+                    </div>`;
+                contenedor.appendChild(div);
+            });
+        }
+
+        function borrarPregunta(index) {
+            if(confirm("¿Proceder con la eliminación de esta entrada?")) { bancoPreguntas.splice(index, 1); guardarBancoEnDB(); renderizarLista(); }
+        }
+
+        function abrirGestorTemas() { renderizarGestorTemas(); document.getElementById('modal-gestor-temas').classList.remove('oculto'); }
+        function cerrarGestorTemas() {
+            document.getElementById('modal-gestor-temas').classList.add('oculto');
+            if(!document.getElementById('modal-editar').classList.contains('oculto')) {
+                const select = document.getElementById('edit-tema-select');
+                const valorAnterior = select.value;
+                cargarSelectorTemas();
+                if(listaTemas.includes(valorAnterior)) select.value = valorAnterior;
+            }
+        }
+        function renderizarGestorTemas() {
+            const cont = document.getElementById('lista-temas-gestion'); cont.innerHTML = '';
+            if(listaTemas.length === 0) return cont.innerHTML = '<div style="color:var(--text-muted); text-align:center;">No existen categorías configuradas.</div>';
+            listaTemas.forEach((tema, i) => {
+                cont.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid var(--border-color);">
+                    <span style="font-weight:500;">🏷️ ${tema}</span><div><button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem;" onclick="renombrarTema(${i})">✏️</button> <button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem; color:var(--danger);" onclick="eliminarTema(${i})">🗑️</button></div></div>`;
+            });
+        }
+        function agregarNuevoTema() {
+            let valor = document.getElementById('nuevo-tema-input').value.trim();
+            if(!valor) return;
+            valor = valor.charAt(0).toUpperCase() + valor.slice(1); 
+            if(listaTemas.includes(valor)) return alert("El área temática especificada ya se encuentra registrada.");
+            listaTemas.push(valor); listaTemas.sort(); guardarTemasEnDB(); document.getElementById('nuevo-tema-input').value = ''; renderizarGestorTemas();
+        }
+        function renombrarTema(index) {
+            const viejo = listaTemas[index];
+            let nuevo = prompt("Especifique la nueva denominación:", viejo);
+            if(!nuevo || nuevo.trim() === "" || nuevo === viejo) return;
+            nuevo = nuevo.trim().charAt(0).toUpperCase() + nuevo.trim().slice(1);
+            if(listaTemas.includes(nuevo)) return alert("La denominación proporcionada ya está en uso.");
+            listaTemas[index] = nuevo; listaTemas.sort();
+            let cambios = false;
+            bancoPreguntas.forEach(p => { if(p.tema === viejo) { p.tema = nuevo; cambios = true; } });
+            guardarTemasEnDB(); if(cambios) guardarBancoEnDB(); renderizarGestorTemas(); renderizarLista();
+        }
+        function eliminarTema(index) {
+            const viejo = listaTemas[index];
+            if(!confirm(`¿Confirma la eliminación del área temática "${viejo}"?\nLas entradas asociadas quedarán sin categorizar.`)) return;
+            listaTemas.splice(index, 1);
+            let cambios = false;
+            bancoPreguntas.forEach(p => { if(p.tema === viejo) { delete p.tema; cambios = true; } });
+            guardarTemasEnDB(); if(cambios) guardarBancoEnDB(); renderizarGestorTemas(); renderizarLista();
+        }
+
+        function cargarSelectorTemas() {
+            const select = document.getElementById('edit-tema-select');
+            select.innerHTML = '<option value="">-- Sin Clasificar --</option>';
+            listaTemas.forEach(t => select.innerHTML += `<option value="${t}">${t}</option>`);
+        }
+
+        function abrirModalNuevaPregunta() {
+            indiceEdicion = -1;
+            opcionesTemporales = ["", "", "", ""]; 
+            imagenBase64Temporal = null;
+
+            document.getElementById('modal-titulo').innerText = "Registro de Nueva Pregunta";
+            cargarSelectorTemas();
+            document.getElementById('edit-tema-select').value = "";
+            document.getElementById('edit-pregunta').value = "";
+            document.getElementById('edit-explicacion').value = "";
+            
+            renderizarOpcionesEdit(0);
+            resetCajaImagen();
+
+            document.getElementById('modal-editar').classList.remove('oculto');
+            document.getElementById('edit-pregunta').focus();
+        }
+
+        function abrirModalEdicion(indexGlobal) {
+            indiceEdicion = indexGlobal;
+            const p = bancoPreguntas[indiceEdicion];
+            opcionesTemporales = [...p.opciones]; 
+            imagenBase64Temporal = null;
+
+            document.getElementById('modal-titulo').innerText = "Edición de Pregunta";
+            cargarSelectorTemas();
+            document.getElementById('edit-tema-select').value = p.tema || '';
+            document.getElementById('edit-pregunta').value = p.pregunta;
+            document.getElementById('edit-explicacion').value = p.explicacion || '';
+            renderizarOpcionesEdit(p.respuestaCorrecta);
+            
+            if (p.imagenBase64) {
+                document.getElementById('edit-img-preview').src = p.imagenBase64;
+                document.getElementById('edit-img-preview').style.display = "block";
+                document.getElementById('paste-instructions').style.display = "none";
+                document.getElementById('btn-eliminar-img').style.display = "block";
+            } else { resetCajaImagen(); }
+            
+            document.getElementById('modal-editar').classList.remove('oculto');
+            document.getElementById('paste-zone').focus();
+        }
+
+        function editarDesdeTest() {
+            const pTest = preguntasTestActual[preguntaActual];
+            const indexGlobal = bancoPreguntas.indexOf(pTest);
+            if(indexGlobal > -1) abrirModalEdicion(indexGlobal);
+        }
+
+        function borrarDesdeTest() {
+            if(confirm("Atención: ¿Proceder con la eliminación definitiva de esta entrada del registro principal?")) {
+                const pTest = preguntasTestActual[preguntaActual];
+                const indexGlobal = bancoPreguntas.indexOf(pTest);
+                if(indexGlobal > -1) bancoPreguntas.splice(indexGlobal, 1);
+                
+                preguntasTestActual.splice(preguntaActual, 1);
+                estadoRespuestas.splice(preguntaActual, 1);
+                guardarBancoEnDB();
+                
+                if (preguntasTestActual.length === 0) {
+                    mostrarResumenFinal();
+                } else {
+                    if (preguntaActual >= preguntasTestActual.length) preguntaActual = preguntasTestActual.length - 1;
+                    cargarPreguntaTest();
+                }
+            }
+        }
+
+        function cerrarModalEdicion() { document.getElementById('modal-editar').classList.add('oculto'); }
+        function resetCajaImagen() {
+            document.getElementById('edit-img-preview').style.display = "none";
+            document.getElementById('paste-instructions').style.display = "block";
+            document.getElementById('btn-eliminar-img').style.display = "none";
+            imagenBase64Temporal = null;
+        }
+
+        function renderizarOpcionesEdit(correctaIndex) {
+            const contenedor = document.getElementById('contenedor-edit-opciones'); contenedor.innerHTML = '';
+            opcionesTemporales.forEach((opt, i) => {
+                contenedor.innerHTML += `<div class="opcion-edit-item"><input type="radio" name="radio-correcta" class="radio-correcta" value="${i}" ${i===correctaIndex?'checked':''}>
+                <input type="text" class="form-control input-opcion-texto" value="${opt.replace(/"/g, '&quot;')}" onchange="actualizarArrayOpciones(${i}, this.value)">
+                <button class="btn btn-outline" style="padding: 8px; border: none;" onclick="eliminarOpcionEdit(${i})">✕</button></div>`;
+            });
+        }
+        function actualizarArrayOpciones(index, valor) { opcionesTemporales[index] = valor; }
+        function agregarOpcionVacia() {
+            opcionesTemporales.push(""); const m = document.querySelector('input[name="radio-correcta"]:checked');
+            renderizarOpcionesEdit(m ? parseInt(m.value) : 0);
+        }
+        function eliminarOpcionEdit(index) {
+            opcionesTemporales.splice(index, 1); const m = document.querySelector('input[name="radio-correcta"]:checked');
+            let idx = m ? parseInt(m.value) : 0; if (index < idx) idx--; else if (index === idx) idx = 0; 
+            renderizarOpcionesEdit(idx);
+        }
+
+        document.addEventListener('paste', function(e) {
+            if(document.getElementById('modal-editar').classList.contains('oculto')) return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) { procesarYComprimirArchivo(items[i].getAsFile()); e.preventDefault(); break; }
+            }
+        });
+
+        function procesarYComprimirArchivo(archivo) {
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas'); let w = img.width, h = img.height;
+                    if (w > 800) { h *= 800 / w; w = 800; }
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d'); ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+                    imagenBase64Temporal = canvas.toDataURL('image/jpeg', 0.65);
+                    document.getElementById('edit-img-preview').src = imagenBase64Temporal; document.getElementById('edit-img-preview').style.display = "block";
+                    document.getElementById('paste-instructions').style.display = "none"; document.getElementById('btn-eliminar-img').style.display = "block";
+                };
+                img.src = e.target.result;
+            };
+            lector.readAsDataURL(archivo);
+        }
+
+        function eliminarImagenActual() { 
+            if(indiceEdicion !== -1) {
+                const p = bancoPreguntas[indiceEdicion]; 
+                delete p.imagenBase64; 
+                p.requiereImagen = false; 
+            }
+            resetCajaImagen(); 
+        }
+
+        function guardarEdicion() {
+            const t = document.getElementById('edit-tema-select').value;
+            const preguntaTexto = document.getElementById('edit-pregunta').value.trim();
+            const explicacionTexto = document.getElementById('edit-explicacion').value.trim();
+            const inputsTexto = document.querySelectorAll('.input-opcion-texto');
+            const opciones = Array.from(inputsTexto).map(i => i.value.trim()).filter(v => v !== '');
+            const sel = document.querySelector('input[name="radio-correcta"]:checked');
+            const respuestaCorrecta = sel ? parseInt(sel.value) : 0;
+
+            if (preguntaTexto === "" || opciones.length < 2) return alert("Requisito incompleto: Se requiere un enunciado y un mínimo de dos opciones de respuesta.");
+
+            let p;
+            if (indiceEdicion === -1) {
+                p = { id: Date.now() }; 
+                bancoPreguntas.push(p);
+            } else {
+                p = bancoPreguntas[indiceEdicion];
+            }
+
+            if (t !== "") p.tema = t; else delete p.tema;
+            p.pregunta = preguntaTexto;
+            p.explicacion = explicacionTexto;
+            p.opciones = opciones;
+            p.respuestaCorrecta = respuestaCorrecta;
+            
+            if (imagenBase64Temporal) { p.imagenBase64 = imagenBase64Temporal; p.requiereImagen = true; } 
+            else if (!p.imagenBase64) p.requiereImagen = false;
+
+            guardarBancoEnDB(); cerrarModalEdicion();
+            
+            if (!document.getElementById('pantalla-gestion').classList.contains('oculto')) renderizarLista();
+            if (!document.getElementById('pantalla-test').classList.contains('oculto') && indiceEdicion !== -1) {
+                // Al editar, si cambian las respuestas, reseteamos el estado de esa pregunta
+                estadoRespuestas[preguntaActual].evaluada = false;
+                estadoRespuestas[preguntaActual].seleccionada = -1;
+                estadoRespuestas[preguntaActual].correcta = null;
+                cargarPreguntaTest(); 
+            }
+        }
+    </script>
+</body>
+</html>
