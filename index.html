@@ -1128,7 +1128,7 @@
             p.pregunta = preguntaTexto;
             p.explicacion = explicacionTexto;
             p.opciones = opciones;
-            p.respuestaCorrecta = constCorrecta;
+            p.respuestaCorrecta = respuestaCorrecta; // <--- AQUÍ ESTABA EL ERROR
             
             if (imagenBase64Temporal) { p.imagenBase64 = imagenBase64Temporal; p.requiereImagen = true; } 
             else if (!p.imagenBase64) p.requiereImagen = false;
