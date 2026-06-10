@@ -284,14 +284,15 @@
         </div>
         
         <div class="upload-box">
-            <label style="display: block; font-weight: 500; margin-bottom: 10px;">Importar archivo Súper JSON</label>
+            <label style="display: block; font-weight: 500; margin-bottom: 10px;">Importar Examen o Banco de Preguntas (.json)</label>
             <input type="file" id="json-upload" accept=".json" class="form-control" style="background: white; padding: 5px;" onchange="cargarJSON(event)">
             
             <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
-                <button onclick="exportarSúperJSON()" class="btn btn-success" style="font-size: 0.85rem;">💾 Exportar Súper JSON</button>
+                <button onclick="exportarSúperJSON()" class="btn btn-success" style="font-size: 0.85rem;">💾 Descargar Copia de Seguridad</button>
                 <button onclick="borrarTodoBanco()" class="btn btn-outline" style="color: var(--danger); border-color: #fca5a5; font-size: 0.85rem;">🗑️ Vaciar Base de Datos</button>
             </div>
             <small id="error-json" style="color:var(--danger); display:block; margin-top:10px; font-weight:bold;"></small>
+            <small style="display:block; margin-top:10px; color:var(--text-muted);">Los nuevos archivos importados se sumarán a su base de datos actual sin borrar las preguntas existentes. El sistema omitirá automáticamente los duplicados.</small>
         </div>
 
         <div style="display: flex; gap: 10px; margin-bottom: 16px;">
@@ -829,7 +830,7 @@
             });
         }
 
-        // --- GESTIÓN, EDICIÓN Y JSON (Mantenido intacto de la versión anterior) ---
+        // --- GESTIÓN DE IMPORTACIÓN Y EXPORTACIÓN ---
         function cargarJSON(event) {
             const archivo = event.target.files[0];
             if (!archivo) return;
@@ -839,13 +840,40 @@
                     let textoJson = e.target.result.replace(/[\u200B-\u200D\uFEFF]/g, ''); 
                     const nuevas = JSON.parse(textoJson);
                     if(!Array.isArray(nuevas)) throw new Error("Formato inválido.");
-                    bancoPreguntas = bancoPreguntas.concat(nuevas);
+                    
+                    let agregadas = 0;
+                    let omitidas = 0;
+
+                    // Algoritmo anti-duplicados
+                    nuevas.forEach(nuevaP => {
+                        // Comprueba si ya existe una pregunta con el mismo enunciado exacto
+                        const existe = bancoPreguntas.some(p => 
+                            p.pregunta.trim().toLowerCase() === nuevaP.pregunta.trim().toLowerCase()
+                        );
+                        
+                        if(!existe) {
+                            bancoPreguntas.push(nuevaP);
+                            agregadas++;
+                        } else {
+                            omitidas++;
+                        }
+                    });
+
                     sincronizarTemas(); 
                     guardarBancoEnDB();
                     renderizarLista();
-                    alert("Importación completada con éxito.");
+                    
+                    // Notificación detallada al usuario
+                    let mensajeResumen = `Proceso de importación finalizado.\n\n✅ Preguntas nuevas incorporadas: ${agregadas}`;
+                    if(omitidas > 0) {
+                        mensajeResumen += `\n⚠️ Preguntas omitidas (ya existían en su base de datos): ${omitidas}`;
+                    }
+                    alert(mensajeResumen);
+                    
                     event.target.value = ""; 
-                } catch (error) { document.getElementById('error-json').innerText = "Error en la lectura del archivo JSON."; }
+                } catch (error) { 
+                    document.getElementById('error-json').innerText = "Error crítico en la lectura del archivo JSON."; 
+                }
             };
             lector.readAsText(archivo, 'UTF-8');
         }
@@ -1100,7 +1128,7 @@
             p.pregunta = preguntaTexto;
             p.explicacion = explicacionTexto;
             p.opciones = opciones;
-            p.respuestaCorrecta = respuestaCorrecta;
+            p.respuestaCorrecta = constCorrecta;
             
             if (imagenBase64Temporal) { p.imagenBase64 = imagenBase64Temporal; p.requiereImagen = true; } 
             else if (!p.imagenBase64) p.requiereImagen = false;
@@ -1109,7 +1137,6 @@
             
             if (!document.getElementById('pantalla-gestion').classList.contains('oculto')) renderizarLista();
             if (!document.getElementById('pantalla-test').classList.contains('oculto') && indiceEdicion !== -1) {
-                // Al editar, si cambian las respuestas, reseteamos el estado de esa pregunta
                 estadoRespuestas[preguntaActual].evaluada = false;
                 estadoRespuestas[preguntaActual].seleccionada = -1;
                 estadoRespuestas[preguntaActual].correcta = null;
