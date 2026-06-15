@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plataforma de Evaluación - Neuro y Endo</title>
+    <title>Plataforma de Evaluación Médica</title>
     <style>
         :root {
             --bg-body: #f8fafc; --bg-card: #ffffff; --text-main: #0f172a; --text-muted: #64748b;
@@ -16,7 +16,7 @@
         .oculto { display: none !important; }
         
         h1, h2, h3 { color: var(--text-main); margin-top: 0; font-weight: 600; }
-        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 10px; }
         .subtitle { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px; }
 
         .btn { display: inline-flex; justify-content: center; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 6px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
@@ -25,6 +25,7 @@
         .btn-outline { background-color: transparent; border-color: var(--border-color); color: var(--text-main); }
         .btn-outline:hover { background-color: var(--bg-body); border-color: #cbd5e1; }
         .btn-success { background-color: var(--success); color: white; }
+        .btn-filtro-activo { background-color: #fef3c7 !important; border-color: #d97706 !important; color: #d97706 !important; font-weight: 600; }
         
         .menu-grid { display: flex; flex-direction: column; gap: 12px; flex-grow: 1; }
         .menu-btn { padding: 16px; font-size: 1rem; border: 1px solid var(--border-color); background: white; color: var(--text-main); border-radius: 8px; font-weight: 500; cursor: pointer; transition: 0.2s;}
@@ -141,10 +142,13 @@
 
     <div id="pantalla-menu" class="container">
         <h1>Banco de Evaluación Médica</h1>
-        <div class="subtitle">Sistema Nervioso y Endocrino</div>
+        <div class="subtitle" style="display:flex; justify-content:center; align-items:center; gap:8px;">
+            <select id="selector-asignatura-menu" class="form-control" style="width: auto; font-weight: 600; background-color: #eff6ff; color: var(--primary); border-color: var(--primary);" onchange="cambiarAsignaturaMenu()"></select>
+            <button class="btn btn-outline" style="padding: 8px 10px; font-size: 0.9rem;" onclick="abrirGestorAsignaturas()" title="Gestionar Asignaturas">⚙️</button>
+        </div>
         
         <div style="text-align: center; margin-bottom: 30px; color: var(--text-muted); font-size: 0.95rem;">
-            Total de preguntas disponibles: <strong id="contador-total" style="color: var(--text-main);">Cargando...</strong>
+            Total de preguntas en esta asignatura: <strong id="contador-total" style="color: var(--text-main);">Cargando...</strong>
         </div>
 
         <div class="menu-grid">
@@ -289,14 +293,15 @@
             
             <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: center;">
                 <button onclick="exportarSúperJSON()" class="btn btn-success" style="font-size: 0.85rem;">💾 Descargar Copia de Seguridad</button>
-                <button onclick="borrarTodoBanco()" class="btn btn-outline" style="color: var(--danger); border-color: #fca5a5; font-size: 0.85rem;">🗑️ Vaciar Base de Datos</button>
+                <button onclick="borrarTodoBanco()" class="btn btn-outline" style="color: var(--danger); border-color: #fca5a5; font-size: 0.85rem;">🗑️ Vaciar Asignatura</button>
             </div>
             <small id="error-json" style="color:var(--danger); display:block; margin-top:10px; font-weight:bold;"></small>
-            <small style="display:block; margin-top:10px; color:var(--text-muted);">Los nuevos archivos importados se sumarán a su base de datos actual sin borrar las preguntas existentes. El sistema omitirá automáticamente los duplicados.</small>
+            <small style="display:block; margin-top:10px; color:var(--text-muted);">Los archivos importados se sumarán a la asignatura activa sin borrar preguntas existentes. Se omitirán los duplicados.</small>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-            <input type="text" id="buscador" class="form-control" style="flex: 1;" placeholder="Buscar enunciado, tema, ID..." onkeyup="renderizarLista()">
+        <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+            <input type="text" id="buscador" class="form-control" style="flex: 1; min-width: 200px;" placeholder="Buscar enunciado, tema, ID..." onkeyup="renderizarLista()">
+            <button id="btn-filtro-img" class="btn btn-outline" style="flex-shrink: 0; font-size: 0.9rem;" onclick="toggleFiltroImagen()" title="Mostrar solo preguntas que requieren imagen y no la tienen">⚠️ Filtrar sin imagen</button>
             <button class="btn btn-primary" onclick="abrirModalNuevaPregunta()" style="flex-shrink: 0; font-size: 0.9rem;">+ Nueva Pregunta</button>
         </div>
         
@@ -304,11 +309,16 @@
         <div class="watermark">Desarrollado por: Miquel Navarro Gómez</div>
     </div>
 
+    <!-- MODAL EDICIÓN -->
     <div id="modal-editar" class="modal-overlay oculto">
         <div class="modal-content">
             <h3 id="modal-titulo" style="margin-top: 0; margin-bottom: 24px;">Editar Pregunta</h3>
             <div class="modal-grid">
                 <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label>Asignatura</label>
+                        <select id="edit-asignatura-select" class="form-control" onchange="cargarSelectorTemas()"></select>
+                    </div>
                     <div class="form-group" style="margin: 0;">
                         <label>Tema / Categoría</label>
                         <div style="display: flex; gap: 10px;">
@@ -348,6 +358,7 @@
         </div>
     </div>
 
+    <!-- MODAL GESTOR TEMAS -->
     <div id="modal-gestor-temas" class="modal-overlay oculto" style="z-index: 1050;">
         <div class="modal-content modal-content-small">
             <h3 style="margin-top: 0; margin-bottom: 20px;">⚙️ Gestor de Temas</h3>
@@ -360,24 +371,40 @@
         </div>
     </div>
 
+    <!-- MODAL GESTOR ASIGNATURAS -->
+    <div id="modal-gestor-asignaturas" class="modal-overlay oculto" style="z-index: 1050;">
+        <div class="modal-content modal-content-small">
+            <h3 style="margin-top: 0; margin-bottom: 20px;">📚 Gestor de Asignaturas</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="nueva-asignatura-input" class="form-control" placeholder="Nombre de la nueva asignatura...">
+                <button class="btn btn-primary" onclick="agregarNuevaAsignatura()">Añadir</button>
+            </div>
+            <div id="lista-asignaturas-gestion" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; background: #fafafa;"></div>
+            <button class="btn btn-outline" style="width: 100%; margin-top: 20px;" onclick="cerrarGestorAsignaturas()">Cerrar y Volver</button>
+        </div>
+    </div>
+
     <script>
         // --- BASE DE DATOS E INICIALIZACIÓN ---
         let db;
         let bancoPreguntas = [];
-        let listaTemas = []; 
+        let listaTemas = {}; 
+        let listaAsignaturas = [];
         
-        // --- VARIABLES DE SESIÓN DE TEST ---
+        // --- VARIABLES DE SESIÓN Y CONTEXTO ---
+        let asignaturaActiva = ""; 
         let preguntasTestActual = []; 
-        let estadoRespuestas = []; // Almacena el progreso de cada pregunta: { seleccionada: index, evaluada: bool, correcta: bool }
+        let estadoRespuestas = []; 
         let preguntaActual = 0;
         let correccionInmediata = true;
+        let filtroFaltaImagenActivo = false; 
         
         let indiceEdicion = -1; 
         let opcionesTemporales = []; 
         let imagenBase64Temporal = null; 
 
         function initDB() {
-            const request = indexedDB.open("NeuroEndoDB", 1);
+            const request = indexedDB.open("NeuroEndoDB", 2); 
             request.onupgradeneeded = function(event) {
                 db = event.target.result;
                 if (!db.objectStoreNames.contains("bancoStore")) db.createObjectStore("bancoStore");
@@ -392,12 +419,48 @@
         function cargarDatosDesdeDB() {
             const transaction = db.transaction(["bancoStore"], "readonly");
             const store = transaction.objectStore("bancoStore");
-            let pCargadas = false, tCargados = false;
+            let pCargadas = false, tCargados = false, aCargadas = false;
             
             store.get("preguntas").onsuccess = function(e) { bancoPreguntas = e.target.result || []; pCargadas = true; check(); };
-            store.get("temas").onsuccess = function(e) { listaTemas = e.target.result || []; tCargados = true; check(); };
+            store.get("asignaturas").onsuccess = function(e) { listaAsignaturas = e.target.result || []; aCargadas = true; check(); };
+            store.get("temas").onsuccess = function(e) { 
+                const data = e.target.result;
+                if (Array.isArray(data)) {
+                    listaTemas = {};
+                    const defaultAsig = (listaAsignaturas && listaAsignaturas.length > 0) ? listaAsignaturas[0] : "Sistema Nervioso y Endocrino";
+                    if(data.length > 0) listaTemas[defaultAsig] = data;
+                } else {
+                    listaTemas = data || {}; 
+                }
+                tCargados = true; check(); 
+            };
             
-            function check() { if(pCargadas && tCargados) { sincronizarTemas(); actualizarMenu(); } }
+            function check() { 
+                if(pCargadas && tCargados && aCargadas) { 
+                    let migracionBD = false;
+                    
+                    if (listaAsignaturas.length === 0) {
+                        listaAsignaturas = ["Sistema Nervioso y Endocrino"];
+                        guardarAsignaturasEnDB();
+                    }
+                    
+                    bancoPreguntas.forEach(p => {
+                        if(!p.asignatura) {
+                            p.asignatura = "Sistema Nervioso y Endocrino";
+                            migracionBD = true;
+                        }
+                    });
+                    
+                    listaAsignaturas.forEach(a => { if(!listaTemas[a]) listaTemas[a] = []; });
+                    
+                    if (migracionBD) guardarBancoEnDB();
+                    
+                    asignaturaActiva = listaAsignaturas[0];
+                    cargarSelectorAsignaturasMenu();
+                    sincronizarTemas(); 
+                    actualizarMenu(); 
+                } 
+            }
         }
 
         function guardarBancoEnDB() {
@@ -410,23 +473,48 @@
             const transaction = db.transaction(["bancoStore"], "readwrite");
             transaction.objectStore("bancoStore").put(listaTemas, "temas");
         }
+        
+        function guardarAsignaturasEnDB() {
+            const transaction = db.transaction(["bancoStore"], "readwrite");
+            transaction.objectStore("bancoStore").put(listaAsignaturas, "asignaturas");
+        }
 
         function sincronizarTemas() {
             let hayCambios = false;
             bancoPreguntas.forEach(p => {
-                if(p.tema && !listaTemas.includes(p.tema)) { listaTemas.push(p.tema); hayCambios = true; }
+                if(p.tema && p.asignatura) {
+                    if(!listaTemas[p.asignatura]) { listaTemas[p.asignatura] = []; hayCambios = true; }
+                    if(!listaTemas[p.asignatura].includes(p.tema)) { 
+                        listaTemas[p.asignatura].push(p.tema); 
+                        hayCambios = true; 
+                    }
+                }
             });
-            listaTemas.sort(); 
+            for(let asig in listaTemas) { listaTemas[asig].sort(); }
             if(hayCambios) guardarTemasEnDB();
         }
 
         window.onload = initDB;
 
-        // --- NAVEGACIÓN ---
+        // --- NAVEGACIÓN Y CONTEXTO ---
+        function cargarSelectorAsignaturasMenu() {
+            const select = document.getElementById('selector-asignatura-menu');
+            select.innerHTML = '';
+            listaAsignaturas.forEach(a => select.innerHTML += `<option value="${a}">${a}</option>`);
+            select.value = asignaturaActiva;
+        }
+
+        function cambiarAsignaturaMenu() {
+            asignaturaActiva = document.getElementById('selector-asignatura-menu').value;
+            actualizarMenu();
+        }
+
         function actualizarMenu() {
-            document.getElementById('contador-total').innerText = bancoPreguntas.length;
+            const filtradas = bancoPreguntas.filter(p => p.asignatura === asignaturaActiva);
+            document.getElementById('contador-total').innerText = filtradas.length;
+            
             const btnIniciar = document.getElementById('btn-iniciar-test');
-            if(bancoPreguntas.length === 0) {
+            if(filtradas.length === 0) {
                 btnIniciar.disabled = true;
                 btnIniciar.style.opacity = "0.5";
                 btnIniciar.style.cursor = "not-allowed";
@@ -445,6 +533,12 @@
         function abrirEditor() {
             document.getElementById('pantalla-menu').classList.add('oculto');
             document.getElementById('pantalla-gestion').classList.remove('oculto');
+            
+            // Resetear filtros al entrar al gestor para evitar confusiones
+            document.getElementById('buscador').value = '';
+            filtroFaltaImagenActivo = false;
+            document.getElementById('btn-filtro-img').classList.remove('btn-filtro-activo');
+            
             renderizarLista();
         }
 
@@ -456,13 +550,22 @@
             const grid = document.getElementById('config-temas-grid');
             grid.innerHTML = '';
             
-            const countSinTema = bancoPreguntas.filter(p => !p.tema || p.tema.trim() === "").length;
-            grid.innerHTML += `<label class="theme-checkbox"><input type="checkbox" value="SIN_TEMA" checked class="chk-tema"> <em>Sin clasificar (${countSinTema})</em></label>`;
+            const preguntasAsignatura = bancoPreguntas.filter(p => p.asignatura === asignaturaActiva);
+            const temasActivos = [...new Set(preguntasAsignatura.map(p => p.tema).filter(Boolean))].sort();
             
-            listaTemas.forEach(t => {
-                const countTema = bancoPreguntas.filter(p => p.tema === t).length;
+            const countSinTema = preguntasAsignatura.filter(p => !p.tema || p.tema.trim() === "").length;
+            if (countSinTema > 0) {
+                grid.innerHTML += `<label class="theme-checkbox"><input type="checkbox" value="SIN_TEMA" checked class="chk-tema"> <em>Sin clasificar (${countSinTema})</em></label>`;
+            }
+            
+            temasActivos.forEach(t => {
+                const countTema = preguntasAsignatura.filter(p => p.tema === t).length;
                 grid.innerHTML += `<label class="theme-checkbox"><input type="checkbox" value="${t}" checked class="chk-tema"> ${t} (${countTema})</label>`;
             });
+            
+            if(temasActivos.length === 0 && countSinTema === 0) {
+                grid.innerHTML = "<div style='color:var(--text-muted); font-size:0.9rem;'>No hay preguntas disponibles en esta asignatura.</div>";
+            }
         }
 
         function marcarTodosTemas(estado) {
@@ -502,6 +605,7 @@
             if(temasSeleccionados.length === 0) return alert("Por favor, seleccione al menos un área temática para proceder.");
 
             let filtradas = bancoPreguntas.filter(p => {
+                if (p.asignatura !== asignaturaActiva) return false;
                 const temaP = p.tema ? p.tema : "SIN_TEMA";
                 return temasSeleccionados.includes(temaP);
             });
@@ -529,7 +633,6 @@
             filtradas = filtradas.slice(0, limit);
             correccionInmediata = document.getElementById('chk-correccion').checked;
             
-            // Inicializar el estado de la sesión
             preguntasTestActual = filtradas;
             preguntaActual = 0;
             estadoRespuestas = new Array(preguntasTestActual.length).fill(null).map(() => ({ 
@@ -593,11 +696,9 @@
             if (p.imagenBase64) contImagen.innerHTML = `<img src="${p.imagenBase64}" class="img-test">`;
             else if (p.requiereImagen) contImagen.innerHTML = `<div style="background:#fef2f2; border:1px solid #fca5a5; color:#991b1b; padding:15px; border-radius:6px; margin-bottom:20px; text-align:center;">Material gráfico ausente. Por favor, edite la pregunta.</div>`;
 
-            // Reset visual controls
             document.getElementById('caja-explicacion').style.display = 'none';
             document.getElementById('btn-mostrar-respuesta').style.display = 'none';
             
-            // Navegación
             document.getElementById('btn-anterior').disabled = (preguntaActual === 0);
             const btnSiguiente = document.getElementById('btn-siguiente');
             if (preguntaActual === preguntasTestActual.length - 1) {
@@ -607,7 +708,6 @@
             }
             btnSiguiente.style.display = 'block';
 
-            // Opciones
             const contenedorOpciones = document.getElementById('contenedor-opciones'); 
             contenedorOpciones.innerHTML = ''; 
             
@@ -616,7 +716,6 @@
                 boton.className = 'option-btn'; 
                 boton.innerText = opcion;
                 
-                // Restablecer el estado visual si previamente se seleccionó/evaluó
                 if (estadoActual.evaluada) {
                     boton.disabled = true;
                     if (index === p.respuestaCorrecta) {
@@ -634,7 +733,6 @@
                 contenedorOpciones.appendChild(boton);
             });
 
-            // Mostrar justificación si ya está evaluada
             if (estadoActual.evaluada && p.explicacion) {
                 const expl = document.getElementById('caja-explicacion');
                 expl.innerHTML = `<strong>Justificación:</strong><br>${p.explicacion}`;
@@ -667,7 +765,6 @@
             estadoActual.evaluada = true;
             estadoActual.correcta = (indexSeleccionado === p.respuestaCorrecta);
 
-            // Reflejar cambios visuales en el instante
             const botones = document.querySelectorAll('.option-btn');
             botones.forEach((btn, i) => {
                 btn.disabled = true;
@@ -710,7 +807,6 @@
 
         // --- PANTALLA RESUMEN Y ESTADÍSTICAS ---
         function mostrarResumenFinal() {
-            // Forzar evaluación silenciosa de las preguntas respondidas en Modo Examen que no se hayan corregido manualmente
             estadoRespuestas.forEach((estado, index) => {
                 if (!estado.evaluada && estado.seleccionada !== -1) {
                     estado.evaluada = true;
@@ -760,7 +856,6 @@
             lista.innerHTML = '';
             contenedor.classList.remove('oculto');
 
-            // Filtrar las preguntas evaluadas según sean aciertos o fallos
             let arrayObjetos = [];
             estadoRespuestas.forEach((estado, index) => {
                 if (estado.evaluada) {
@@ -843,12 +938,17 @@
                     
                     let agregadas = 0;
                     let omitidas = 0;
+                    let nuevasAsignaturas = false;
 
-                    // Algoritmo anti-duplicados
                     nuevas.forEach(nuevaP => {
-                        // Comprueba si ya existe una pregunta con el mismo enunciado exacto
+                        if (!nuevaP.asignatura) nuevaP.asignatura = asignaturaActiva;
+                        if (!listaAsignaturas.includes(nuevaP.asignatura)) {
+                            listaAsignaturas.push(nuevaP.asignatura);
+                            nuevasAsignaturas = true;
+                        }
+
                         const existe = bancoPreguntas.some(p => 
-                            p.pregunta.trim().toLowerCase() === nuevaP.pregunta.trim().toLowerCase()
+                            p.pregunta.trim().toLowerCase() === nuevaP.pregunta.trim().toLowerCase() && p.asignatura === nuevaP.asignatura
                         );
                         
                         if(!existe) {
@@ -859,14 +959,19 @@
                         }
                     });
 
+                    if (nuevasAsignaturas) {
+                        listaAsignaturas.sort();
+                        guardarAsignaturasEnDB();
+                        cargarSelectorAsignaturasMenu();
+                    }
+
                     sincronizarTemas(); 
                     guardarBancoEnDB();
                     renderizarLista();
                     
-                    // Notificación detallada al usuario
-                    let mensajeResumen = `Proceso de importación finalizado.\n\n✅ Preguntas nuevas incorporadas: ${agregadas}`;
+                    let mensajeResumen = `Proceso de importación finalizado en "${asignaturaActiva}".\n\n✅ Preguntas nuevas incorporadas: ${agregadas}`;
                     if(omitidas > 0) {
-                        mensajeResumen += `\n⚠️ Preguntas omitidas (ya existían en su base de datos): ${omitidas}`;
+                        mensajeResumen += `\n⚠️ Preguntas omitidas (ya existían en esta asignatura): ${omitidas}`;
                     }
                     alert(mensajeResumen);
                     
@@ -879,13 +984,18 @@
         }
 
         function exportarSúperJSON() {
-            if(bancoPreguntas.length === 0) return alert("Base de datos vacía. No es posible exportar.");
-            const dataStr = JSON.stringify(bancoPreguntas, null, 2);
+            const filtradas = bancoPreguntas.filter(p => p.asignatura === asignaturaActiva);
+            if(filtradas.length === 0) return alert("La base de datos de esta asignatura está vacía. No es posible exportar.");
+            
+            const dataStr = JSON.stringify(filtradas, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = "banco_super_json_comprimido.json";
+            
+            const nombreArchivo = asignaturaActiva.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '_');
+            a.download = `banco_${nombreArchivo}.json`;
+            
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -893,20 +1003,48 @@
         }
 
         function borrarTodoBanco() {
-            if(confirm("Atención: ¿Confirma que desea eliminar toda la base de datos local de forma permanente?")) {
-                bancoPreguntas = []; listaTemas = []; guardarBancoEnDB(); guardarTemasEnDB(); renderizarLista();
+            if(confirm(`Atención: ¿Confirma que desea vaciar la base de datos de la asignatura "${asignaturaActiva}" permanentemente?\n\nLas demás asignaturas no se verán afectadas.`)) {
+                bancoPreguntas = bancoPreguntas.filter(p => p.asignatura !== asignaturaActiva);
+                listaTemas[asignaturaActiva] = [];
+                guardarBancoEnDB(); 
+                guardarTemasEnDB(); 
+                renderizarLista();
+                actualizarMenu();
             }
+        }
+
+        function toggleFiltroImagen() {
+            filtroFaltaImagenActivo = !filtroFaltaImagenActivo;
+            const btnFiltro = document.getElementById('btn-filtro-img');
+            
+            if (filtroFaltaImagenActivo) {
+                btnFiltro.classList.add('btn-filtro-activo');
+            } else {
+                btnFiltro.classList.remove('btn-filtro-activo');
+            }
+            renderizarLista();
         }
 
         function renderizarLista() {
             const contenedor = document.getElementById('lista-preguntas');
             const busqueda = document.getElementById('buscador').value.toLowerCase();
             contenedor.innerHTML = '';
+            
             bancoPreguntas.forEach((p, index) => {
-                const textoBusqueda = (p.pregunta + " " + (p.tema || '')).toLowerCase();
+                if (p.asignatura !== asignaturaActiva) return;
+
+                // Lógica del filtro de imágenes faltantes
+                if (filtroFaltaImagenActivo) {
+                    const faltaImagen = p.requiereImagen && !p.imagenBase64;
+                    if (!faltaImagen) return;
+                }
+
+                const textoBusqueda = (p.pregunta + " " + (p.tema || '') + " " + (p.id || '')).toLowerCase();
                 if (busqueda && !textoBusqueda.includes(busqueda)) return;
+                
                 let badgeImg = p.imagenBase64 ? `<span class="badge" style="background:#e2e8f0;">🖼️ OK</span>` : (p.requiereImagen ? `<span class="badge badge-warning">⚠️ Falta Img</span>` : '');
                 let badgeTema = p.tema ? `<span class="badge badge-theme">🏷️ ${p.tema}</span>` : '';
+                
                 const div = document.createElement('div');
                 div.className = 'item-pregunta';
                 div.innerHTML = `
@@ -924,6 +1062,82 @@
             if(confirm("¿Proceder con la eliminación de esta entrada?")) { bancoPreguntas.splice(index, 1); guardarBancoEnDB(); renderizarLista(); }
         }
 
+        // --- GESTIÓN DE ASIGNATURAS ---
+        function abrirGestorAsignaturas() { renderizarGestorAsignaturas(); document.getElementById('modal-gestor-asignaturas').classList.remove('oculto'); }
+        function cerrarGestorAsignaturas() { 
+            document.getElementById('modal-gestor-asignaturas').classList.add('oculto'); 
+            cargarSelectorAsignaturasMenu();
+        }
+        function renderizarGestorAsignaturas() {
+            const cont = document.getElementById('lista-asignaturas-gestion'); cont.innerHTML = '';
+            listaAsignaturas.forEach((asig, i) => {
+                const count = bancoPreguntas.filter(p => p.asignatura === asig).length;
+                cont.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid var(--border-color);">
+                    <span style="font-weight:500;">📚 ${asig} <small style="color:var(--text-muted);">(${count})</small></span>
+                    <div><button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem;" onclick="renombrarAsignatura(${i})">✏️</button> <button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem; color:var(--danger);" onclick="eliminarAsignatura(${i})">🗑️</button></div></div>`;
+            });
+        }
+        function agregarNuevaAsignatura() {
+            let valor = document.getElementById('nueva-asignatura-input').value.trim();
+            if(!valor) return;
+            valor = valor.charAt(0).toUpperCase() + valor.slice(1); 
+            if(listaAsignaturas.includes(valor)) return alert("Esta asignatura ya se encuentra registrada.");
+            
+            listaAsignaturas.push(valor); 
+            listaAsignaturas.sort(); 
+            listaTemas[valor] = []; 
+            
+            guardarAsignaturasEnDB(); 
+            guardarTemasEnDB();
+            document.getElementById('nueva-asignatura-input').value = ''; 
+            renderizarGestorAsignaturas();
+        }
+        function renombrarAsignatura(index) {
+            const viejo = listaAsignaturas[index];
+            let nuevo = prompt("Especifique el nuevo nombre para la asignatura:", viejo);
+            if(!nuevo || nuevo.trim() === "" || nuevo === viejo) return;
+            nuevo = nuevo.trim().charAt(0).toUpperCase() + nuevo.trim().slice(1);
+            if(listaAsignaturas.includes(nuevo)) return alert("La denominación proporcionada ya está en uso.");
+            
+            listaAsignaturas[index] = nuevo; listaAsignaturas.sort();
+            
+            let cambios = false;
+            bancoPreguntas.forEach(p => { if(p.asignatura === viejo) { p.asignatura = nuevo; cambios = true; } });
+            
+            if(listaTemas[viejo]) {
+                listaTemas[nuevo] = listaTemas[viejo];
+                delete listaTemas[viejo];
+            }
+            
+            if(asignaturaActiva === viejo) asignaturaActiva = nuevo;
+            
+            guardarAsignaturasEnDB(); 
+            guardarTemasEnDB();
+            if(cambios) guardarBancoEnDB(); 
+            renderizarGestorAsignaturas();
+        }
+        function eliminarAsignatura(index) {
+            const viejo = listaAsignaturas[index];
+            if(listaAsignaturas.length === 1) return alert("No puede eliminar la única asignatura existente.");
+            if(!confirm(`¿Confirma la eliminación de la asignatura "${viejo}"?\nATENCIÓN: Todas las preguntas y temas vinculados a ella se eliminarán permanentemente.`)) return;
+            
+            listaAsignaturas.splice(index, 1);
+            bancoPreguntas = bancoPreguntas.filter(p => p.asignatura !== viejo);
+            
+            if(listaTemas[viejo]) delete listaTemas[viejo];
+            if(asignaturaActiva === viejo) asignaturaActiva = listaAsignaturas[0];
+            
+            guardarAsignaturasEnDB(); guardarTemasEnDB(); guardarBancoEnDB(); renderizarGestorAsignaturas();
+        }
+
+        // --- GESTIÓN DE TEMAS CONTEXTUAL ---
+        function getAsignaturaContextoTemas() {
+            if (!document.getElementById('modal-editar').classList.contains('oculto')) {
+                return document.getElementById('edit-asignatura-select').value || asignaturaActiva;
+            }
+            return asignaturaActiva;
+        }
+
         function abrirGestorTemas() { renderizarGestorTemas(); document.getElementById('modal-gestor-temas').classList.remove('oculto'); }
         function cerrarGestorTemas() {
             document.getElementById('modal-gestor-temas').classList.add('oculto');
@@ -931,48 +1145,96 @@
                 const select = document.getElementById('edit-tema-select');
                 const valorAnterior = select.value;
                 cargarSelectorTemas();
-                if(listaTemas.includes(valorAnterior)) select.value = valorAnterior;
+                if(listaTemas[getAsignaturaContextoTemas()] && listaTemas[getAsignaturaContextoTemas()].includes(valorAnterior)) {
+                    select.value = valorAnterior;
+                }
             }
         }
         function renderizarGestorTemas() {
+            const asig = getAsignaturaContextoTemas();
             const cont = document.getElementById('lista-temas-gestion'); cont.innerHTML = '';
-            if(listaTemas.length === 0) return cont.innerHTML = '<div style="color:var(--text-muted); text-align:center;">No existen categorías configuradas.</div>';
-            listaTemas.forEach((tema, i) => {
+            const temasContexto = listaTemas[asig] || [];
+            
+            if(temasContexto.length === 0) return cont.innerHTML = `<div style="color:var(--text-muted); text-align:center;">No existen categorías configuradas para ${asig}.</div>`;
+            
+            temasContexto.forEach((tema, i) => {
                 cont.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid var(--border-color);">
                     <span style="font-weight:500;">🏷️ ${tema}</span><div><button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem;" onclick="renombrarTema(${i})">✏️</button> <button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem; color:var(--danger);" onclick="eliminarTema(${i})">🗑️</button></div></div>`;
             });
         }
         function agregarNuevoTema() {
+            const asig = getAsignaturaContextoTemas();
             let valor = document.getElementById('nuevo-tema-input').value.trim();
             if(!valor) return;
             valor = valor.charAt(0).toUpperCase() + valor.slice(1); 
-            if(listaTemas.includes(valor)) return alert("El área temática especificada ya se encuentra registrada.");
-            listaTemas.push(valor); listaTemas.sort(); guardarTemasEnDB(); document.getElementById('nuevo-tema-input').value = ''; renderizarGestorTemas();
+            
+            if(!listaTemas[asig]) listaTemas[asig] = [];
+            if(listaTemas[asig].includes(valor)) return alert("El área temática especificada ya se encuentra registrada en esta asignatura.");
+            
+            listaTemas[asig].push(valor); 
+            listaTemas[asig].sort(); 
+            guardarTemasEnDB(); 
+            document.getElementById('nuevo-tema-input').value = ''; 
+            renderizarGestorTemas();
         }
         function renombrarTema(index) {
-            const viejo = listaTemas[index];
+            const asig = getAsignaturaContextoTemas();
+            const viejo = listaTemas[asig][index];
             let nuevo = prompt("Especifique la nueva denominación:", viejo);
             if(!nuevo || nuevo.trim() === "" || nuevo === viejo) return;
             nuevo = nuevo.trim().charAt(0).toUpperCase() + nuevo.trim().slice(1);
-            if(listaTemas.includes(nuevo)) return alert("La denominación proporcionada ya está en uso.");
-            listaTemas[index] = nuevo; listaTemas.sort();
+            
+            if(listaTemas[asig].includes(nuevo)) return alert("La denominación proporcionada ya está en uso en esta asignatura.");
+            
+            listaTemas[asig][index] = nuevo; 
+            listaTemas[asig].sort();
+            
             let cambios = false;
-            bancoPreguntas.forEach(p => { if(p.tema === viejo) { p.tema = nuevo; cambios = true; } });
-            guardarTemasEnDB(); if(cambios) guardarBancoEnDB(); renderizarGestorTemas(); renderizarLista();
+            bancoPreguntas.forEach(p => { if(p.asignatura === asig && p.tema === viejo) { p.tema = nuevo; cambios = true; } });
+            
+            guardarTemasEnDB(); 
+            if(cambios) guardarBancoEnDB(); 
+            renderizarGestorTemas(); 
+            renderizarLista();
         }
         function eliminarTema(index) {
-            const viejo = listaTemas[index];
-            if(!confirm(`¿Confirma la eliminación del área temática "${viejo}"?\nLas entradas asociadas quedarán sin categorizar.`)) return;
-            listaTemas.splice(index, 1);
+            const asig = getAsignaturaContextoTemas();
+            const viejo = listaTemas[asig][index];
+            if(!confirm(`¿Confirma la eliminación del área temática "${viejo}"?\nLas entradas asociadas en esta asignatura quedarán sin categorizar.`)) return;
+            
+            listaTemas[asig].splice(index, 1);
+            
             let cambios = false;
-            bancoPreguntas.forEach(p => { if(p.tema === viejo) { delete p.tema; cambios = true; } });
-            guardarTemasEnDB(); if(cambios) guardarBancoEnDB(); renderizarGestorTemas(); renderizarLista();
+            bancoPreguntas.forEach(p => { if(p.asignatura === asig && p.tema === viejo) { delete p.tema; cambios = true; } });
+            
+            guardarTemasEnDB(); 
+            if(cambios) guardarBancoEnDB(); 
+            renderizarGestorTemas(); 
+            renderizarLista();
+        }
+
+        // --- EDITOR MODAL ---
+        function cargarSelectorAsignaturasEdicion() {
+            const select = document.getElementById('edit-asignatura-select');
+            select.innerHTML = '';
+            listaAsignaturas.forEach(a => select.innerHTML += `<option value="${a}">${a}</option>`);
         }
 
         function cargarSelectorTemas() {
+            const selectAsig = document.getElementById('edit-asignatura-select').value || asignaturaActiva;
             const select = document.getElementById('edit-tema-select');
+            const valorAnterior = select.value;
+            
             select.innerHTML = '<option value="">-- Sin Clasificar --</option>';
-            listaTemas.forEach(t => select.innerHTML += `<option value="${t}">${t}</option>`);
+            
+            const temasContexto = listaTemas[selectAsig] || [];
+            temasContexto.forEach(t => select.innerHTML += `<option value="${t}">${t}</option>`);
+            
+            if(temasContexto.includes(valorAnterior)) {
+                select.value = valorAnterior;
+            } else {
+                select.value = "";
+            }
         }
 
         function abrirModalNuevaPregunta() {
@@ -981,6 +1243,9 @@
             imagenBase64Temporal = null;
 
             document.getElementById('modal-titulo').innerText = "Registro de Nueva Pregunta";
+            cargarSelectorAsignaturasEdicion();
+            document.getElementById('edit-asignatura-select').value = asignaturaActiva;
+            
             cargarSelectorTemas();
             document.getElementById('edit-tema-select').value = "";
             document.getElementById('edit-pregunta').value = "";
@@ -1000,6 +1265,10 @@
             imagenBase64Temporal = null;
 
             document.getElementById('modal-titulo').innerText = "Edición de Pregunta";
+            
+            cargarSelectorAsignaturasEdicion();
+            document.getElementById('edit-asignatura-select').value = p.asignatura || asignaturaActiva;
+            
             cargarSelectorTemas();
             document.getElementById('edit-tema-select').value = p.tema || '';
             document.getElementById('edit-pregunta').value = p.pregunta;
@@ -1106,6 +1375,7 @@
         }
 
         function guardarEdicion() {
+            const a = document.getElementById('edit-asignatura-select').value;
             const t = document.getElementById('edit-tema-select').value;
             const preguntaTexto = document.getElementById('edit-pregunta').value.trim();
             const explicacionTexto = document.getElementById('edit-explicacion').value.trim();
@@ -1124,11 +1394,12 @@
                 p = bancoPreguntas[indiceEdicion];
             }
 
+            p.asignatura = a;
             if (t !== "") p.tema = t; else delete p.tema;
             p.pregunta = preguntaTexto;
             p.explicacion = explicacionTexto;
             p.opciones = opciones;
-            p.respuestaCorrecta = respuestaCorrecta; // <--- AQUÍ ESTABA EL ERROR
+            p.respuestaCorrecta = respuestaCorrecta; 
             
             if (imagenBase64Temporal) { p.imagenBase64 = imagenBase64Temporal; p.requiereImagen = true; } 
             else if (!p.imagenBase64) p.requiereImagen = false;
